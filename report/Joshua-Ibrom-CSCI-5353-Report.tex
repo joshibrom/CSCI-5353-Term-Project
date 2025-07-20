@@ -1,0 +1,155 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\usepackage[newfloat]{minted}
+\usepackage{caption}
+
+\setminted{fontsize=\footnotesize, breaklines}
+
+\newenvironment{code}{\captionsetup{type=listing}}{}
+\SetupFloatingEnvironment{listing}{name=Source Code}
+
+\begin{document}
+
+\title{A Comparative Analysis of Multilingual Approaches to Erroneous C Code}
+
+\author{
+\IEEEauthorblockN{Joshua Ibrom}
+\IEEEauthorblockA{\textit{Dept. of CEMS} \\
+\textit{Texas A\&M University - San Antonio}\\
+San Antonio, US \\
+jibro01@jaguar.tamu.edu}
+}
+
+\maketitle
+
+\begin{abstract}
+foo bar.
+\end{abstract}
+
+\begin{IEEEkeywords}
+programming language translation, ai safety
+\end{IEEEkeywords}
+
+\section{Background}
+%...............................................................................
+The fields of computer science and computer programming have advanced greatly
+since the introduction of the C programming language, a ``general purpose
+programming language featuring economy of expression, modern control flow, and
+data structure capabilities [with] a rich set of operators and data types''
+\cite{ritchie1978c}, in 1972 when it was first developed
+\cite{tyagi2014tribute}. Since C's development, many applications have been
+written using the language, leading to there being the potential of many code
+samples that lend to some erroneous or undefined behavior due to C's inherent
+design wherein a developer must consider the correct data type for some value
+and manage the memory from the allocation to freeing of that data.
+
+%...............................................................................
+In the wake of unsafe programs written by C programmers across the spectrum of
+skill levels and familiarities with the language and its idempotent design
+patterns, programmers have created more modern successor languages. Of these
+languages are Zig (first published in 2017), a ``general-purpose programming
+language and toolchain for maintaining robust, optimal, and reusable software''
+\cite{zigGithubRepo}, and Rust (first published in 2010), a systems programming
+language focusing on memory safety and performance \cite{bugden2022rust}. Rust,
+however, is better-labeled as being some successor and competitor of C++,
+another systems / general-purpose programming language which itself is derived
+from the syntax of C \cite{bugden2022rust}.
+
+\subsection{C as it Relates to Zig and Rust}
+Being that Rust is not a direct ancestor of C, we might ask why this language
+should be compared to both C and Zig, which itself is a competitor of C that
+boasts support for integration with \texttt{libc} but does not depend on it
+\cite{zig2025overview}? To answer this, we might consider some fundamental issue
+with C code: integer overflows. If we consider the example C code shown in
+Listing \ref{lst:c-integer-overflow}, we find that this code contains an
+integer overflow where some operation, in this case being addition, results in a
+value greater than the containing data type may store, in this case being an
+\texttt{unsigned char} which may store values 0-255, inclusive. As such, the
+output of the code shown in Listing \ref{lst:c-integer-overflow} would be 69.
+
+\begin{code}
+    \inputminted{c}{../code-examples/c/integer-overflow.c}
+    \captionof{listing}{Integer overflow example in C.}
+    \label{lst:c-integer-overflow}
+\end{code}
+
+Zig and Rust both have built-in methods of detecting and reporting this behavior,
+usually through the running thread panicking on the overflow. Zig, being more akin
+to C, therefore makes sense to include in the scope of this paper as a ``safer''
+alternative to C (albeit with its own memory-related issues). Since safety is more
+of a priority in modern application development, I felt that including a ``safe''
+language like Rust in this paper would also be well-suited for the comparisons made
+herein.
+
+\subsection{Research Questions}
+\begin{enumerate}
+    \item How effective are compilers of more modern languages at identifying and
+        addressing potential pitfalls, especially as they relate to runtime errors?
+    \item How effective is KLEE at in identifying and addressing these same
+        pitfalls?
+    \item How effective is translation to a safer and more modern language at
+        remedying potential pitfalls and runtime errors?
+\end{enumerate}
+
+
+\section{Related Work}
+
+
+\section{Proposed Solution}
+For this paper, I propose the following method of answering the guiding research
+questions:
+\begin{enumerate}
+    \item Gather various C code samples which demonstrate errors in C, focusing
+        primarily on runtime errors.
+    \item Evaluate these C samples with a symbolic execution engine, in this case
+        being KLEE \cite{cadar2021klee}.
+    \item Use \texttt{zig translate} to translate the samples from C code to Zig
+        code and evaluate the code and it's LLVM intermediate representation (IR).
+    \item Perform a manual best-effort translation of the samples to idempotent
+        Zig and Rust samples, comparing their code and their LLVM IRs.
+\end{enumerate}
+
+With this approach the effectiveness of modern compilers at identifying and
+addressing potential pitfalls (such as integer overflows) should be evaluated, as
+should the effectiveness of KLEE in doing the same. Within this process we may then
+determine if language translation is more effective and in what way this translation
+may be more effective---translations may not be one-to-one with the original C code
+samples and the degree to which there may be variation for the sake of safety must
+be considered.
+
+
+\section{Dataset}
+The dataset used is a collection of self-written C samples which focus primarily on
+integer overflows, nonexhaustive switching, and divisions by zero. All source samples
+are listed within the artifacts of this paper under the directory
+``\texttt{code-examples/c/}''. Each C file may be described as follows:
+\begin{itemize}
+    \item \textit{integer-overflow.c}: Demonstrates an integer overflow where two
+        \texttt{unsigned char} values are added with their result being stored in an
+        \texttt{unsigned char}.
+    \item \textit{advanced\_integer\_overflow.c}: Demonstrates the aforementioned
+        integer overflow but includes additional branching logic which will return a
+        boolean value of if an overflow had occurred.
+    \item \textit{nonexhaustive-switching.c}: Demonstrates a situation in which an
+        \texttt{enum} is switched upon without all paths being covered.
+    \item \textit{div-by-zero.c}: Demonstrates a division by 0.
+\end{itemize}
+
+
+\section{Results and Analysis}
+
+
+\section{Conclusion and Future Work}
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{report/sources}
+\end{document}
