@@ -156,19 +156,110 @@ Following that, \textit{nonexhaustive-switching.c} was analyzed and then
 \subsection{Integer Overflows}
 Considering the code sample observed in Listing \ref{lst:c-integer-overflow}, we find
 that there will always be some integer overflow that occurs. When compiled and ran, the
-program does perform this overflow.
+program does perform this overflow. When attempting to compile and run the translated
+Zig version, handwritten Zig version, and handwritten Rust versions, we find that these
+all panic on the overflow (assuming that none were compiled with any level of
+optimization).
 
 \begin{code}
     \medskip
+    \hrulefill\\
+    C:
     \inputminted[firstline=6,lastline=19]{llvm}{../code-examples/c/integer-overflow.ll}
-    \captionof{listing}{LLVM IR of the \texttt{add} function defined in Listing
-        \ref{lst:c-integer-overflow}.}
-    \label{lst:llvm-c-integer-overflow}
+    \hrulefill\\
+    Zig:
+    \inputminted[firstline=148697,lastline=148718]{llvm}{../code-examples/zig/integer_overflow.ll}
+    \hrulefill\\
+    Rust:
+    \inputminted[firstline=129,lastline=145]{llvm}{../code-examples/rust/integer_overflow.ll}
+    \captionof{listing}{LLVM IRs of various \texttt{add} function implementations.}
+    \label{lst:llvm-integer-overflow}
     \medskip
 \end{code}
 
-If we consider the source code shown in Listing \ref{lst:llvm-c-integer-overflow},
-then we may observe that when C code is
+Considering the LLVM IR code shown in Listing \ref{lst:llvm-integer-overflow}, we may
+then observe the safety checks that Zig and Rust perform to detect and report that some
+integer overflow has occurred. While not shown due to length, the LLVM IR of the translated
+Zig code should be noted to contain the same safety checks.
+
+If we run KLEE against this code, marking both inputs of the \texttt{add} function as symbolic,
+we find that KLEE correctly reports there is one execution path involving this function. If we
+then implement branching such that we return from the program a boolean value of if there was
+some overflow (shown in Listing \ref{lst:c-branched-overflow}), we find that in this case KLEE
+does find that there exists another path---a path which without integer overflows could not be
+realized.
+
+\begin{code}
+    \medskip
+    \inputminted{c}{../code-examples/c-klee/advanced_integer_overflow.c}
+    \captionof{listing}{A C integer overflow example with branching depending on if an
+    overflow occurs.}
+    \label{lst:c-branched-overflow}
+    \medskip
+\end{code}
+
+Using KLEE, we observe the two paths from symbolic values $a$ and $b$ as follows:
+\begin{enumerate}
+    \item $a\mapsto0,\ b\mapsto1$: There is no overflow and we return 0;
+    \item $a\mapsto255,\ b\mapsto1$: There is some overflow and we return 1.
+\end{enumerate}
+In this way, we may begin to realize the power of symbolic execution in finding various
+logical paths and how they might be reached---a useful tool when attempting to find and
+remedy bugs and errors in C code.
+
+
+\subsection{Nonexhaustive Switching}
+\begin{code}
+    \medskip
+    \inputminted{c}{../code-examples/c/nonexhaustive-switching.c}
+    \captionof{listing}{C code that demonstrates nonexhaustive switching.}
+    \label{lst:c-nonex-switching}
+    \medskip
+\end{code}
+
+If we consider the C code shown in Listing \ref{lst:c-nonex-switching} we may observe that there
+is a path which is not explored for case \texttt{BISH\_BOSH}. While this does generally get
+reported as a warning when attempting to compile the C program, that warning cannot be relied on.
+Within both Zig and Rust we find that this behavior is not allowed as both languages require
+their \texttt{switch} / \texttt{match} constructs (for Zig and Rust, respectively) to be
+exhaustive, meaning that all paths must be covered in some manner for a Zig or Rust program to
+compile. For this reason, I find it interesting when considering the translated C to Zig code
+shown in Listing \ref{lst:zig-nonex-switching}.
+
+\begin{code}
+    \medskip
+    \inputminted[firstline=64,lastline=78]{zig}{../code-examples/zig-translations/nonexhaustive-switching.zig}
+    \captionof{listing}{Translated Zig code for Listing \ref{lst:c-nonex-switching}.}
+    \label{lst:zig-nonex-switching}
+    \medskip
+\end{code}
+
+As may be seen in Listing \ref{lst:zig-nonex-switching}, the unhandled path is covered by Zig's
+\texttt{else} clause. While this does make the Zig code compileable, this then means that there
+is once more not a one-to-one translation of the C to Zig code and that should there have been
+multiple unhandled paths those would all fall through to the \texttt{else} clause. This action
+may ensure that 0 is guaranteed to be returned from the function in the event of some unhandled
+path, but this also means that should the developer have not known that paths were not covered
+there may never be knowledge of such since no warning or error would be reported to the
+developer.
+
+Considering the KLEE evaluation of the C code with the input value to \texttt{nonexhaustive}
+being made symbolic, KLEE does find this unhandled input to the path, realizing that any other
+integer value $i\notin\{FOO,\ BAR,\ BIZ,\ BAZ\}$ may be considered as an input to this function
+and would result in some erroneous behavior.
+
+
+\subsection{Division by Zero}
+Another common bug in C programs which may be detected at compile time but could also propagate
+as a runtime-only error is a division by zero. When considering this, we find that for some C
+program containing an explicit division by zero we may still compile the program. In contrast,
+Zig and Rust both detect this behavior during compilation and will throw some compilation error
+to the developer. As such, we find that we cannot test Zig and Rust implementation where the
+compiler is able to determine that some division by zero will always occur. Methods might exist
+to circumnavigate this, such as parsing the string \texttt{"0"} to an integer, but this I feel
+goes beyond the scope of what I would expect a compiler to compute at compile time irregardless
+of the level of optimization being applied while compiling. As such, no further exploration of
+this issue will be performed.
 
 
 \section{Conclusion and Future Work}
