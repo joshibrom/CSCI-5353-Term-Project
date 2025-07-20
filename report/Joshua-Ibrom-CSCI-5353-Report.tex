@@ -14,7 +14,7 @@
 \setminted{fontsize=\footnotesize, breaklines}
 
 \newenvironment{code}{\captionsetup{type=listing}}{}
-\SetupFloatingEnvironment{listing}{name=Source Code}
+\SetupFloatingEnvironment{listing}{name=Listing}
 
 \begin{document}
 
@@ -39,7 +39,6 @@ programming language translation, ai safety
 \end{IEEEkeywords}
 
 \section{Background}
-%...............................................................................
 The fields of computer science and computer programming have advanced greatly
 since the introduction of the C programming language, a ``general purpose
 programming language featuring economy of expression, modern control flow, and
@@ -51,7 +50,6 @@ samples that lend to some erroneous or undefined behavior due to C's inherent
 design wherein a developer must consider the correct data type for some value
 and manage the memory from the allocation to freeing of that data.
 
-%...............................................................................
 In the wake of unsafe programs written by C programmers across the spectrum of
 skill levels and familiarities with the language and its idempotent design
 patterns, programmers have created more modern successor languages. Of these
@@ -76,9 +74,11 @@ value greater than the containing data type may store, in this case being an
 output of the code shown in Listing \ref{lst:c-integer-overflow} would be 69.
 
 \begin{code}
+    \medskip
     \inputminted{c}{../code-examples/c/integer-overflow.c}
     \captionof{listing}{Integer overflow example in C.}
     \label{lst:c-integer-overflow}
+    \medskip
 \end{code}
 
 Zig and Rust both have built-in methods of detecting and reporting this behavior,
@@ -145,6 +145,30 @@ are listed within the artifacts of this paper under the directory
 
 
 \section{Results and Analysis}
+Performing the experiment as proposed yielded interesting results. As a baseline, the
+\textit{integer-overflow.c} code sample was first analyzed, followed by the
+\textit{advanced\_integer\_overflow.c} code sample since it was deemed necessary to
+add some branching logic so that the performance of KLEE could be better-evaluated.
+Following that, \textit{nonexhaustive-switching.c} was analyzed and then
+\textit{div-by-zero.c}.
+
+
+\subsection{Integer Overflows}
+Considering the code sample observed in Listing \ref{lst:c-integer-overflow}, we find
+that there will always be some integer overflow that occurs. When compiled and ran, the
+program does perform this overflow.
+
+\begin{code}
+    \medskip
+    \inputminted[firstline=6,lastline=19]{llvm}{../code-examples/c/integer-overflow.ll}
+    \captionof{listing}{LLVM IR of the \texttt{add} function defined in Listing
+        \ref{lst:c-integer-overflow}.}
+    \label{lst:llvm-c-integer-overflow}
+    \medskip
+\end{code}
+
+If we consider the source code shown in Listing \ref{lst:llvm-c-integer-overflow},
+then we may observe that when C code is
 
 
 \section{Conclusion and Future Work}
