@@ -101,6 +101,35 @@ herein.
 
 
 \section{Related Work}
+Symbolic execution, being some method that ``symbolize[s] the input data of
+[a] program [...by using] symbol variables instead of real variables to
+explore and parse a program'' \cite{zhang2020survey}. Tools such as KLEE
+\cite{cadar2021klee} have been developed to facilitate this process,
+enabling programmers to find potential bugs and dependencies for exploring
+most paths to sometimes include those that contain some non-standard runtime
+behavior.
+
+Symbolic execution may be applied in conjugation with exploring some compiled
+representation of a given sample of code through other static analysis means.
+SKINK \cite{cassez2017skink} is one such tool which may be used in this case,
+with the tool relying on C/C++ \texttt{assert} statements to determine if the
+given code satisfies the specification described by the \texttt{assert}s. The
+authors of this tool do note the limitations of this approach, with many
+being around special cases where the LLVM IR has been optimized; however,
+through targeting the LLVM IR we find that their tool is theoretically
+usable for analyzing code written in any language that compiles to some LLVM
+IR (which in this case could include Zig and Rust) \cite{cassez2017skink}.
+
+Given that there must be some benchmark by which a tool's performance may
+be evaluated, we may consider the Juliet Test Suite \cite{boland2012juliet}
+which contains code samples that demonstrate various common weakness
+enumerations (CWEs) in C/C++ and Java. Being that there are language
+limitations, one such approach of expanding this dataset to target other
+languages (where possible) is to use artificial intelligence and large
+language models to translate some sample of code into another language, such
+as from C to Rust as is being conducted by DARPA \cite{emre2021translating}.
+This approach is not perfect and requires additional verification of
+translated code, however \cite{fulton2025how}.
 
 
 \section{Proposed Solution}
@@ -176,6 +205,14 @@ optimization).
     \label{lst:llvm-integer-overflow}
     \medskip
 \end{code}
+
+Should there have been some level of optimization applied, we may then find
+that the safety checks are removed in both cases of using Zig and Rust
+(assuming Zig's \textit{ReleaseFast} optimization level and at least a level
+of 1 for Rust). In other cases, we may find that in the compilation the
+resulting value of the integer overflow is pre-computed such that there is
+no call to the \texttt{add} function and the computed value is stored
+directly in the LLVM IR.
 
 Considering the LLVM IR code shown in Listing \ref{lst:llvm-integer-overflow}, we may
 then observe the safety checks that Zig and Rust perform to detect and report that some
@@ -263,6 +300,30 @@ this issue will be performed.
 
 
 \section{Conclusion and Future Work}
+In evaluating the results of this experiment, we find that the KLEE symbolic
+execution tool is relatively effective in finding various paths in given C
+code samples, even when those paths rely on some non-standard behavior such
+as an integer overflow. Additionally, we observe the means by which we may
+determine that languages such as Zig and Rust are intrinsically safer due to
+their safety checks that they perform, such as panicking on some overflow and
+requiring that their switch constructs be exhaustive in branch coverage. This
+enhanced safety does come at the cost of translations into these languages not
+being one-to-one. Arguably, undefined and erroneous behavior should not be
+relied on for code to run as intended. Hence, we find that translation into a
+safer language like Rust or Zig, even with Zig's manual memory management
+model (though Zig can detect and report leaks), is a valuable strategy which
+can enhance application safety.
+
+Further research may include conducting the same method of analysis against
+the Juliet Test Suite. Here, we shall find that there will be a challenge in
+determining the method by which C code should be translated into Rust and
+idempotent Zig code (meaning that \texttt{zig translate} is not used to
+generate the Zig code) and in determining the level of accuracy in a given
+translation being one-to-one. Additionally, this method may be applied to
+any other language which compiles to LLVM IR and may also include any other
+static analysis tool as the inclusion of more languages and tooling should
+only be a net benefit in ensuring the accuracy of static analysis and the
+safety of a programming language.
 
 
 \bibliographystyle{IEEEtran}
