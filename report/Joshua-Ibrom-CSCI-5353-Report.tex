@@ -31,11 +31,25 @@ jibro01@jaguar.tamu.edu}
 \maketitle
 
 \begin{abstract}
-foo bar.
+Historically there has been a great deal of code written in the C programming
+language. Despite its popularity, C and code written in it are widely
+considered ``unsafe'' as there may be many runtime errors and undefined
+behaviors contained within C codebases. As such, more modern languages like
+Zig (which theoretically has its share of memory-related safety errors) and
+Rust are considered as alternative languages to migrate / translate legacy C
+codebases into. This paper explores how these languages might be a safer
+alternative, especially regarding runtime errors and undefined behaviors, by
+evaluating C code with KLEE and by performing manual static analysis of LLVM
+Intermediate Representation (IR) code in an effort to find what protections
+and restrictions might exist in a more modern language (such as exhaustive
+switching and overflow detection) to ensure that applications carry with them
+a ``safer'' binary. Conclusions are drawn on the depth by which a given C
+codebase may be translated to one in another language since some features of
+C do not carry, thus prohibiting a one-to-one translation of the codebase.
 \end{abstract}
 
 \begin{IEEEkeywords}
-programming language translation, ai safety
+C code safety, LLVM IR analysis, programming language translation
 \end{IEEEkeywords}
 
 \section{Background}
